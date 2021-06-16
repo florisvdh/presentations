@@ -585,6 +585,10 @@ See <https://florisvdh.github.io/demos/20210617_grass/>.
 
 --
 
+- PostGIS from R: <https://rpostgres.r-dbi.org/>
+
+--
+
 - SAGA-GIS from R: <https://stevenpawley.github.io/Rsagacmd/>
 
 --
