@@ -7,7 +7,7 @@ date: "2021-06-17"
 output:
   xaringan::moon_reader:
     lib_dir: ../../docs/20210617_grass/libs
-    css: ["rladies", "rladies-fonts", "custom.css"]
+    css: [rladies, rladies-fonts]
     nature:
       highlightStyle: github
       highlightLines: true
@@ -20,12 +20,19 @@ knitr::opts_chunk$set(eval = FALSE)
 library(rgrass7)
 ```
 
-
 class: center, top
 background-image: url(https://grass.osgeo.org//images/logos/grasslogo.svg)
 background-size: 200px
 
 # Introducing GRASS GIS
+
+<style type="text/css">
+.remark-code-line-highlighted {
+	background-color: #ff80;
+	font-weight: bold;
+}
+</style>
+
 
 
 ---
