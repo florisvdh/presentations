@@ -32,7 +32,10 @@ background-size: 200px
 
 # Note
 
-- Please go to <https://grass.osgeo.org/> for official documentation
+- Please go to <https://grass.osgeo.org/> for official documentation.
+
+- GRASS GIS documentation uses the GPL license.
+Since this presentation recycles some GRASS GIS documentation, it is licensed under the terms of the [GNU General Public License](https://www.gnu.org/licenses/#GPL) (>=v2).
 
 
 ---
