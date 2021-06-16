@@ -1,0 +1,595 @@
+---
+title: "Using GRASS GIS"
+subtitle: "with GRASS commands and from R"
+author: "Floris Vanderhaeghe"
+institute: "Research Institute for Nature and Forest, Brussels"
+date: "2021-06-17"
+output:
+  xaringan::moon_reader:
+    lib_dir: ../../docs/20210617_grass/libs
+    css: ["rladies", "rladies-fonts", "custom.css"]
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+```{r setup, include=FALSE}
+options(htmltools.dir.version = FALSE)
+knitr::opts_chunk$set(eval = FALSE)
+library(rgrass7)
+```
+
+
+class: center, top
+background-image: url(https://grass.osgeo.org//images/logos/grasslogo.svg)
+background-size: 200px
+
+# Introducing GRASS GIS
+
+
+---
+
+# Note
+
+- Please go to <https://grass.osgeo.org/> for official documentation
+
+
+---
+layout: true
+
+# GRASS GIS: intro
+
+---
+
+- **G**eographic **R**esources **A**nalysis **S**upport **S**ystem, commonly referred to as GRASS GIS
+
+--
+
+- GRASS GIS: used either as a stand-alone application or as backend for other software packages such as QGIS and R or in the cloud
+
+--
+
+- vector and raster geospatial data management, geoprocessing, spatial modelling and visualization
+
+--
+
+- Linux, Mac and Windows
+
+--
+
+- both an intuitive graphical user interface (GUI) and a command line syntax
+
+--
+
+- FOSS: GPL-license
+
+--
+
+- Neteler M., Bowman M.H., Landa M. & Metz M. (2012). GRASS GIS: A multi-purpose open source GIS. Environmental Modelling & Software 31: 124–130. https://doi.org/10.1016/j.envsoft.2011.11.014.
+
+---
+
+- under continuous development since 1982
+
+  - 1980s: U.S. Army Corps of Engineers' Construction Engineering Research Laboratory (USA/CERL) started development as _Fort Hood Information System (FHIS)_, from which grew the more general purpose GRASS GIS.
+  Several universities adopted GRASS as an important training and research environment.
+
+--
+
+.center[<img src="https://grass.osgeo.org/images/gallery/community/1990_shapiro_westervelt_goran.png" alt="First GAIA award for GRASS GIS" width="250" align="middle"> ]
+  
+---
+
+  - 1990s: US federal agencies, universities, and private companies got also involved in the development
+  
+--
+
+  - since end of 1990s: multi-national 'GRASS Development Team' led by University of Hannover in Germany (Markus Neteler)
+  
+
+.center[<img src="https://grass.osgeo.org/images/gallery/community/2017_grass-devteam_paris.jpg" alt="Some of the GRASS dev team members" width="250" align="middle"> ]
+.center[_Some team members_]
+
+--
+
+  - 1999: first release under GPL license
+  
+--
+
+  - 2006: formation of the Open Source Geospatial Foundation ([OSGeo](https://www.osgeo.org/)), with GRASS GIS as a founding member
+  
+_<https://grass.osgeo.org/about/history/>_
+
+
+---
+layout: false
+
+# <https://grass.osgeo.org>
+
+```{r eval=TRUE, echo=FALSE}
+knitr::include_url("https://grass.osgeo.org", "460px")
+```
+
+
+---
+layout: true
+
+# Overview
+
+---
+
+- GRASS installation architecture
+
+--
+
+- GRASS CLI
+    - `grass --text [[[<GISDBASE>/]<LOCATION>/] <MAPSET>]`
+    
+--
+    
+- GRASS GUI
+    - `grass --gui [[[<GISDBASE>/]<LOCATION>/] <MAPSET>]`
+
+--
+
+> _Since GRASS modules require a specific environment, this program must be called before any other GRASS module can run._
+
+--
+
+> _The  startup  program  will  remember both the desired user interface and mapset.
+Thus, the next time the user runs GRASS, typing `grass` (without any options) will start GRASS with the
+previous settings for the user interface and mapset selected._
+
+---
+
+We'll discover 4 methods to use GRASS CLI:
+
+- from a shell program, after running `grass --text`
+
+--
+
+- from the console of the GRASS GUI
+
+--
+
+- with help from R, after running `rgrass7::initGRASS()`:
+
+   - in the RStudio terminal
+   
+--
+- from R, using `system()`, `shell()` or `rgrass7::stringexecGRASS()`
+      
+---
+layout: true
+    
+# Temporary versus persistent 'project'
+
+---
+
+```{bash}
+GRASS 7.8.5 ~ $ g.gisenv #<<
+GISDBASE=/tmp/grass7-floris-6520
+LOCATION_NAME=tmploc
+MAPSET=PERMANENT
+GUI=text
+PID=6531
+```
+    
+Directories are set as **GRASS variables** (`<GISDBASE>/<LOCATION>/<MAPSET>`):
+
+--
+
+- **GIS database**
+
+--
+
+- **location**: defined by 1 CRS. So different CRSs = different location directories
+
+--
+
+- **mapset**: primarily useful for different access rights or separation of content.
+Default mapset is `PERMANENT`: just use that.
+    
+
+---
+
+When working inside just one CRS:
+
+- just make a location directory (consider it your GRASS project directory), with subdir `PERMANENT`. And set the location CRS with GRASS command `g.proj`.
+
+    - e.g. `g.proj -c --quiet epsg=31370`
+        
+--
+    
+- presence of mapset `PERMANENT` in location is checked when invoking GRASS.
+    
+--
+    
+- setup of location & mapset can also be guided, by first launching the GUI
+    
+--
+    
+- so do it manually when only working from R
+        
+---
+
+Example of a code repository structure containing a _persistent_ GRASS GIS project:
+
+```{bash}
+$ tree myrepository/ #<<
+myrepository/
+├── data
+│   ├── binary
+│   ├── csv
+│   └── grass_dir
+│       └── PERMANENT
+├── docs
+├── README.md
+└── src
+```
+
+--
+
+Make `grass_dir` git-ignored!
+
+---
+  
+Temporary GRASS location (e.g. by running `grass` with `--tmp-location`): lives in a temporary folder
+
+```{bash}
+GRASS 7.8.5 ~ $ g.gisenv #<<
+GISDBASE=/tmp/grass7-floris-7201
+LOCATION_NAME=tmploc
+MAPSET=PERMANENT
+GUI=text
+PID=7212
+GUI_PID=8977
+```
+
+  = useful for trying stuff, or for GRASS code you want to be run from R every time
+
+---
+layout: false
+class: center, top
+background-image: url(https://grass.osgeo.org//images/logos/grasslogo.svg)
+background-size: 200px
+
+# Using GRASS GIS
+
+
+---
+layout: false
+
+# Starting GRASS from the shell
+
+- Existing project: `grass --text locationdir/PERMANENT`
+
+- Temporary project: `grass --text -c EPSG:31370 --tmp-location`
+
+For this approach to work, `grass` (or `grass78` which it links to) must be in your `PATH` env variable.
+Otherwise you must enter the full path of the executable, e.g. `/usr/bin/grass --text`.
+
+(Starting GUI: `grass --gui`)
+
+--
+
+- Importantly, this launches a new shell in which the `PATH` env variable has been expanded with the individual GRASS module directories ==> they're now available as commands.
+
+---
+
+```{bash}
+$ grass -c EPSG:31370 --tmp-location  #<<
+Starting GRASS GIS...
+Creating new GRASS GIS location <tmploc>...
+Cleaning up temporary files...
+
+          __________  ___   __________    _______________
+         / ____/ __ \/   | / ___/ ___/   / ____/  _/ ___/
+        / / __/ /_/ / /| | \__ \\_  \   / / __ / / \__ \
+       / /_/ / _, _/ ___ |___/ /__/ /  / /_/ // / ___/ /
+       \____/_/ |_/_/  |_/____/____/   \____/___//____/
+
+Welcome to GRASS GIS 7.8.5
+GRASS GIS homepage:                      https://grass.osgeo.org
+This version running through:            Bash Shell (/bin/bash)
+Help is available with the command:      g.manual -i
+See the licence terms with:              g.version -c
+See citation options with:               g.version -x
+Start the GUI with:                      g.gui wxpython
+When ready to quit enter:                exit
+
+To run a command as administrator (user "root"), use "sudo <command>".
+See "man sudo_root" for details.
+
+GRASS 7.8.5 ~ $ 
+```
+
+
+---
+layout: true
+
+# Meet some basic commands, explore docs & GUI
+
+---
+
+- `g.gisenv`
+
+- `g.manual`
+
+  - `g.manual -i`
+  - `g.manual g.gisenv`
+
+- `g.proj -w`
+
+- `g.gui &`
+
+---
+
+- related commands share the same prefix, e.g.:
+
+prefix | | topic
+:---- | --- | :------
+g. |  | general
+v. |  | vector
+r. |  | raster
+db. |  | attribute database
+d. |  | display
+
+
+---
+layout: false
+
+# Interactive usage: example
+
+1. load data extract from Flemish Habitat Map WFS
+
+    - `v.in.ogr`
+    - uses URL adapted from [WFS tutorial](https://inbo.github.io/tutorials/tutorials/spatial_wfs_services/)
+
+1. dissolve
+
+    - `v.dissolve`
+
+1. rasterize
+
+    - `v.to.rast`
+    
+1. calculate raster stats
+
+    - `r.stats`
+
+
+---
+
+# GRASS commands (with syntaxis) can be used in various places
+
+- from a shell program, after running `grass --text`
+
+--
+
+- from the console of the GRASS GUI
+
+--
+
+- with help from R, after running `rgrass7::initGRASS()`:
+
+   - in the RStudio terminal
+   
+--
+- from R, using `system()`, `shell()` or `rgrass7::stringexecGRASS()`
+
+---
+layout: true
+
+# rgrass7::initGRASS()
+
+---
+
+- `initGRASS()`
+
+  - > _Run GRASS interface in an R session not started within GRASS_
+  - > _The function initializes environment variables used by GRASS_
+  
+--
+  
+- `initGRASS(gisBase, home, SG, gisDbase, addon_base, location, mapset,
+  override = FALSE, use_g.dirseps.exe = TRUE, pid, remove_GISRC=FALSE)`
+  
+- important:
+
+    - `gisDbase`, `location`, `mapset`: default to temporary directories.
+    For a persistent project, set them to existing directories (with `mapset = "PERMANENT"`)
+
+--
+    - `gisBase`: _the directory path to GRASS binaries and libraries, **containing bin and lib subdirectories** among others_
+    
+---
+    
+```{r eval=TRUE}
+gisbase_grass <- ifelse(.Platform$OS.type == "windows", 
+                        link2GI::paramGRASSw()$gisbase_GRASS[1],
+                        link2GI::paramGRASSx()$gisbase_GRASS[1])
+gisbase_grass
+```
+
+--
+
+```{r eval=TRUE}
+as.matrix(list.dirs(gisbase_grass, recursive = FALSE, full.names = FALSE))
+```
+
+---
+- example for persistent project:
+
+```{r}
+initGRASS(gisBase = gisbase_grass,
+          home = tempdir(),
+          gisDbase = file.path(find_root(is_git_root), "data"), 
+          location = "grass_dir", 
+          mapset = "PERMANENT")
+```
+
+
+```{bash}
+myrepository/
+├── data
+│   ├── binary
+│   ├── csv
+│   └── grass_dir
+│       └── PERMANENT
+├── docs
+├── README.md
+└── src
+```
+
+
+---
+
+- example for temporary project:
+
+```{r eval=TRUE, results="hide"}
+initGRASS(gisBase = gisbase_grass,
+          home = tempdir(), 
+          mapset = "PERMANENT")
+```
+
+---
+
+After running `initGRASS()`, you can interactively use GRASS commands in the RStudio terminal, or wrap GRASS commands in R!
+
+---
+layout: false
+class: center, top
+background-image: url(https://grass.osgeo.org//images/logos/grasslogo.svg)
+background-size: 200px
+
+# GRASS from R
+
+
+---
+layout: true
+
+# Working with GRASS from R
+
+Three options to run GRASS command **from within R**:
+
+- `system()`, `shell()`, `execshell()`: not using `rgrass7` (can also take multiple lines)
+    
+---
+
+```{r}
+# running system commands available in PATH:
+# below command calls system() on Unix-like OS, shell() on Windows
+execshell <- protocolhelper:::execshell 
+# remotes::install_github("inbo/protocolhelper")
+```
+
+--
+
+```{r}
+execshell("g.proj -c --quiet epsg=31370")
+```
+
+---
+
+- wrapping each command line in `rgrass7::stringexecGRASS()`: a wrapper around the original `rgrass7::execGRASS()`
+     
+```{r}
+stringexecGRASS("g.proj -c --quiet epsg=31370")
+```
+
+--
+- breaking up command as arguments of `rgrass7::execGRASS()`:
+    
+```{r eval=TRUE}
+execGRASS("g.proj",
+          flags = c("c", "quiet"),
+          epsg = 31370)
+```
+
+---
+layout: true
+
+# Working with GRASS from R
+
+---
+
+
+```{r eval=TRUE}
+stringexecGRASS("g.proj -w")
+```
+
+---
+
+[`rgrass7`](https://rsbivand.github.io/rgrass7/) checks the required command syntax, within R, based on the `--interface-description` XML output of each command
+
+--
+
+- `execshell()`: advantage of accepting entire GRASS script; supports maximum number of commands
+- `rgrass7::execGRASS()`: advantage that the GRASS command parameters can be more easily programmed in R
+- `rgrass7::stringexecGRASS()`: advantage of using original GRASS syntax (e.g. copied from GRASS session), while following `rgrass7` philosophy of handling user input in R
+
+--
+
+Of course all three can be mixed in the same script.
+      
+
+---
+
+Advantages of working with GRASS from R:
+
+- combines forces of GRASS _and_ R
+
+--
+
+- R adds the facilities to create an overall reproducible workflow (e.g. literate programming with R markdown)
+
+--
+
+- interact with spatial R objects using [`rgrass7`](https://rsbivand.github.io/rgrass7/) functions:
+
+    - `readVECT()`
+    - `writeVECT()`
+    - `readRAST()`
+    - `writeRAST()`
+--
+    - supports `sp`, `sf` and `stars` objects (and others if you convert in R)
+--
+    - set to using either `sp` or `sf`+`stars` with `use_sp()` or `use_sf()`
+--
+    - advice: if GRASS must work on already existing data (cloud / disk), let GRASS read it directly (`writeXXX()` will cause an extra write + read step by using an intermediate file)
+    
+---
+layout: false
+
+# Complete workflow as Rmd
+
+See <https://florisvdh.github.io/demos/20210617_grass/>.
+
+---
+
+# Some other bridges to open GIS software
+
+- QGIS from R: <https://paleolimbot.github.io/qgisprocess/>
+
+--
+
+- SAGA-GIS from R: <https://stevenpawley.github.io/Rsagacmd/>
+
+--
+
+See https://geocompr.robinlovelace.net/gis.html.
+
+    
+---
+class: inverse, center, middle
+
+# Questions?
+
+
+
+
+
+
+
