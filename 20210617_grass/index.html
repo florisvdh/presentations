@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Using GRASS GIS</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Floris Vanderhaeghe" />
+    <meta name="date" content="2021-06-17" />
+    <script src="libs/header-attrs/header-attrs.js"></script>
+    <link href="libs/remark-css/rladies.css" rel="stylesheet" />
+    <link href="libs/remark-css/rladies-fonts.css" rel="stylesheet" />
+    <link rel="stylesheet" href="/media/floris/DATA/git_repositories/presentations/src/20210617_grass/custom.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Using GRASS GIS
+## with GRASS commands and from R
+### Floris Vanderhaeghe
+### Research Institute for Nature and Forest, Brussels
+### 2021-06-17
+
+---
+
+
+
+
+
+class: center, top
+background-image: url(https://grass.osgeo.org//images/logos/grasslogo.svg)
+background-size: 200px
+
+# Introducing GRASS GIS
+
+
+---
+
+# Note
+
+- Please go to &lt;https://grass.osgeo.org/&gt; for official documentation.
+
+- GRASS GIS documentation uses the GPL license.
+Since this presentation recycles some GRASS GIS documentation, it is licensed under the terms of the [GNU General Public License](https://www.gnu.org/licenses/#GPL) (&gt;=v2).
+
+
+---
+layout: true
+
+# GRASS GIS: intro
+
+---
+
+- **G**eographic **R**esources **A**nalysis **S**upport **S**ystem, commonly referred to as GRASS GIS
+
+--
+
+- GRASS GIS: used either as a stand-alone application or as backend for other software packages such as QGIS and R or in the cloud
+
+--
+
+- vector and raster geospatial data management, geoprocessing, spatial modelling and visualization
+
+--
+
+- Linux, Mac and Windows
+
+--
+
+- both an intuitive graphical user interface (GUI) and a command line syntax
+
+--
+
+- FOSS: GPL-license
+
+--
+
+- Neteler M., Bowman M.H., Landa M. &amp; Metz M. (2012). GRASS GIS: A multi-purpose open source GIS. Environmental Modelling &amp; Software 31: 124–130. https://doi.org/10.1016/j.envsoft.2011.11.014.
+
+---
+
+- under continuous development since 1982
+
+  - 1980s: U.S. Army Corps of Engineers' Construction Engineering Research Laboratory (USA/CERL) started development as _Fort Hood Information System (FHIS)_, from which grew the more general purpose GRASS GIS.
+  Several universities adopted GRASS as an important training and research environment.
+
+--
+
+.center[&lt;img src="https://grass.osgeo.org/images/gallery/community/1990_shapiro_westervelt_goran.png" alt="First GAIA award for GRASS GIS" width="250" align="middle"&gt; ]
+  
+---
+
+  - 1990s: US federal agencies, universities, and private companies got also involved in the development
+  
+--
+
+  - since end of 1990s: multi-national 'GRASS Development Team' led by University of Hannover in Germany (Markus Neteler)
+  
+
+.center[&lt;img src="https://grass.osgeo.org/images/gallery/community/2017_grass-devteam_paris.jpg" alt="Some of the GRASS dev team members" width="250" align="middle"&gt; ]
+.center[_Some team members_]
+
+--
+
+  - 1999: first release under GPL license
+  
+--
+
+  - 2006: formation of the Open Source Geospatial Foundation ([OSGeo](https://www.osgeo.org/)), with GRASS GIS as a founding member
+  
+_&lt;https://grass.osgeo.org/about/history/&gt;_
+
+
+---
+layout: false
+
+# &lt;https://grass.osgeo.org&gt;
+
+&lt;iframe src="https://grass.osgeo.org" width="100%" height="460px"&gt;&lt;/iframe&gt;
+
+
+---
+layout: true
+
+# Overview
+
+---
+
+- GRASS installation architecture
+
+--
+
+- GRASS CLI
+    - `grass --text [[[&lt;GISDBASE&gt;/]&lt;LOCATION&gt;/] &lt;MAPSET&gt;]`
+    
+--
+    
+- GRASS GUI
+    - `grass --gui [[[&lt;GISDBASE&gt;/]&lt;LOCATION&gt;/] &lt;MAPSET&gt;]`
+
+--
+
+&gt; _Since GRASS modules require a specific environment, this program must be called before any other GRASS module can run._
+
+--
+
+&gt; _The  startup  program  will  remember both the desired user interface and mapset.
+Thus, the next time the user runs GRASS, typing `grass` (without any options) will start GRASS with the
+previous settings for the user interface and mapset selected._
+
+---
+
+We'll discover 4 methods to use GRASS CLI:
+
+- from a shell program, after running `grass --text`
+
+--
+
+- from the console of the GRASS GUI
+
+--
+
+- with help from R, after running `rgrass7::initGRASS()`:
+
+   - in the RStudio terminal
+   
+--
+- from R, using `system()`, `shell()` or `rgrass7::stringexecGRASS()`
+      
+---
+layout: true
+    
+# Temporary versus persistent 'project'
+
+---
+
+
+```bash
+*GRASS 7.8.5 ~ $ g.gisenv
+GISDBASE=/tmp/grass7-floris-6520
+LOCATION_NAME=tmploc
+MAPSET=PERMANENT
+GUI=text
+PID=6531
+```
+    
+Directories are set as **GRASS variables** (`&lt;GISDBASE&gt;/&lt;LOCATION&gt;/&lt;MAPSET&gt;`):
+
+--
+
+- **GIS database**
+
+--
+
+- **location**: defined by 1 CRS. So different CRSs = different location directories
+
+--
+
+- **mapset**: primarily useful for different access rights or separation of content.
+Default mapset is `PERMANENT`: just use that.
+    
+
+---
+
+When working inside just one CRS:
+
+- just make a location directory (consider it your GRASS project directory), with subdir `PERMANENT`. And set the location CRS with GRASS command `g.proj`.
+
+    - e.g. `g.proj -c --quiet epsg=31370`
+        
+--
+    
+- presence of mapset `PERMANENT` in location is checked when invoking GRASS.
+    
+--
+    
+- setup of location &amp; mapset can also be guided, by first launching the GUI
+    
+--
+    
+- so do it manually when only working from R
+        
+---
+
+Example of a code repository structure containing a _persistent_ GRASS GIS project:
+
+
+```bash
+*$ tree myrepository/
+myrepository/
+├── data
+│   ├── binary
+│   ├── csv
+│   └── grass_dir
+│       └── PERMANENT
+├── docs
+├── README.md
+└── src
+```
+
+--
+
+Make `grass_dir` git-ignored!
+
+---
+  
+Temporary GRASS location (e.g. by running `grass` with `--tmp-location`): lives in a temporary folder
+
+
+```bash
+*GRASS 7.8.5 ~ $ g.gisenv
+GISDBASE=/tmp/grass7-floris-7201
+LOCATION_NAME=tmploc
+MAPSET=PERMANENT
+GUI=text
+PID=7212
+GUI_PID=8977
+```
+
+  = useful for trying stuff, or for GRASS code you want to be run from R every time
+
+---
+layout: false
+class: center, top
+background-image: url(https://grass.osgeo.org//images/logos/grasslogo.svg)
+background-size: 200px
+
+# Using GRASS GIS
+
+
+---
+layout: false
+
+# Starting GRASS from the shell
+
+- Existing project: `grass --text locationdir/PERMANENT`
+
+- Temporary project: `grass --text -c EPSG:31370 --tmp-location`
+
+For this approach to work, `grass` (or `grass78` which it links to) must be in your `PATH` env variable.
+Otherwise you must enter the full path of the executable, e.g. `/usr/bin/grass --text`.
+
+(Starting GUI: `grass --gui`)
+
+--
+
+- Importantly, this launches a new shell in which the `PATH` env variable has been expanded with the individual GRASS module directories ==&gt; they're now available as commands.
+
+---
+
+
+```bash
+*$ grass -c EPSG:31370 --tmp-location
+Starting GRASS GIS...
+Creating new GRASS GIS location &lt;tmploc&gt;...
+Cleaning up temporary files...
+
+          __________  ___   __________    _______________
+         / ____/ __ \/   | / ___/ ___/   / ____/  _/ ___/
+        / / __/ /_/ / /| | \__ \\_  \   / / __ / / \__ \
+       / /_/ / _, _/ ___ |___/ /__/ /  / /_/ // / ___/ /
+       \____/_/ |_/_/  |_/____/____/   \____/___//____/
+
+Welcome to GRASS GIS 7.8.5
+GRASS GIS homepage:                      https://grass.osgeo.org
+This version running through:            Bash Shell (/bin/bash)
+Help is available with the command:      g.manual -i
+See the licence terms with:              g.version -c
+See citation options with:               g.version -x
+Start the GUI with:                      g.gui wxpython
+When ready to quit enter:                exit
+
+To run a command as administrator (user "root"), use "sudo &lt;command&gt;".
+See "man sudo_root" for details.
+
+GRASS 7.8.5 ~ $ 
+```
+
+
+---
+layout: true
+
+# Meet some basic commands, explore docs &amp; GUI
+
+---
+
+- `g.gisenv`
+
+- `g.manual`
+
+  - `g.manual -i`
+  - `g.manual g.gisenv`
+
+- `g.proj -w`
+
+- `g.gui &amp;`
+
+---
+
+- related commands share the same prefix, e.g.:
+
+prefix | | topic
+:---- | --- | :------
+g. |  | general
+v. |  | vector
+r. |  | raster
+db. |  | attribute database
+d. |  | display
+
+
+---
+layout: false
+
+# Interactive usage: example
+
+1. load data extract from Flemish Habitat Map WFS
+
+    - `v.in.ogr`
+    - uses URL adapted from [WFS tutorial](https://inbo.github.io/tutorials/tutorials/spatial_wfs_services/)
+
+1. dissolve
+
+    - `v.dissolve`
+
+1. rasterize
+
+    - `v.to.rast`
+    
+1. calculate raster stats
+
+    - `r.stats`
+
+
+---
+
+# GRASS commands (with syntaxis) can be used in various places
+
+- from a shell program, after running `grass --text`
+
+--
+
+- from the console of the GRASS GUI
+
+--
+
+- with help from R, after running `rgrass7::initGRASS()`:
+
+   - in the RStudio terminal
+   
+--
+- from R, using `system()`, `shell()` or `rgrass7::stringexecGRASS()`
+
+---
+layout: true
+
+# rgrass7::initGRASS()
+
+---
+
+- `initGRASS()`
+
+  - &gt; _Run GRASS interface in an R session not started within GRASS_
+  - &gt; _The function initializes environment variables used by GRASS_
+  
+--
+  
+- `initGRASS(gisBase, home, SG, gisDbase, addon_base, location, mapset,
+  override = FALSE, use_g.dirseps.exe = TRUE, pid, remove_GISRC=FALSE)`
+  
+- important:
+
+    - `gisDbase`, `location`, `mapset`: default to temporary directories.
+    For a persistent project, set them to existing directories (with `mapset = "PERMANENT"`)
+
+--
+    - `gisBase`: _the directory path to GRASS binaries and libraries, **containing bin and lib subdirectories** among others_
+    
+---
+    
+
+```r
+gisbase_grass &lt;- ifelse(.Platform$OS.type == "windows", 
+                        link2GI::paramGRASSw()$gisbase_GRASS[1],
+                        link2GI::paramGRASSx()$gisbase_GRASS[1])
+gisbase_grass
+```
+
+```
+## [1] "/usr/lib/grass78"
+```
+
+--
+
+
+```r
+as.matrix(list.dirs(gisbase_grass, recursive = FALSE, full.names = FALSE))
+```
+
+```
+##       [,1]          
+##  [1,] "bin"         
+##  [2,] "demolocation"
+##  [3,] "docs"        
+##  [4,] "driver"      
+##  [5,] "etc"         
+##  [6,] "fonts"       
+##  [7,] "gui"         
+##  [8,] "lib"         
+##  [9,] "locale"      
+## [10,] "scripts"
+```
+
+---
+- example for persistent project:
+
+
+```r
+initGRASS(gisBase = gisbase_grass,
+          home = tempdir(),
+          gisDbase = file.path(find_root(is_git_root), "data"), 
+          location = "grass_dir", 
+          mapset = "PERMANENT")
+```
+
+
+
+```bash
+myrepository/
+├── data
+│   ├── binary
+│   ├── csv
+│   └── grass_dir
+│       └── PERMANENT
+├── docs
+├── README.md
+└── src
+```
+
+
+---
+
+- example for temporary project:
+
+
+```r
+initGRASS(gisBase = gisbase_grass,
+          home = tempdir(), 
+          mapset = "PERMANENT")
+```
+
+---
+
+After running `initGRASS()`, you can interactively use GRASS commands in the RStudio terminal, or wrap GRASS commands in R!
+
+---
+layout: false
+class: center, top
+background-image: url(https://grass.osgeo.org//images/logos/grasslogo.svg)
+background-size: 200px
+
+# GRASS from R
+
+
+---
+layout: true
+
+# Working with GRASS from R
+
+Three options to run GRASS command **from within R**:
+
+- `system()`, `shell()`, `execshell()`: not using `rgrass7` (can also take multiple lines)
+    
+---
+
+
+```r
+# running system commands available in PATH:
+# below command calls system() on Unix-like OS, shell() on Windows
+execshell &lt;- protocolhelper:::execshell 
+# remotes::install_github("inbo/protocolhelper")
+```
+
+--
+
+
+```r
+execshell("g.proj -c --quiet epsg=31370")
+```
+
+---
+
+- wrapping each command line in `rgrass7::stringexecGRASS()`: a wrapper around the original `rgrass7::execGRASS()`
+     
+
+```r
+stringexecGRASS("g.proj -c --quiet epsg=31370")
+```
+
+--
+- breaking up command as arguments of `rgrass7::execGRASS()`:
+    
+
+```r
+execGRASS("g.proj",
+          flags = c("c", "quiet"),
+          epsg = 31370)
+```
+
+---
+layout: true
+
+# Working with GRASS from R
+
+---
+
+
+
+```r
+stringexecGRASS("g.proj -w")
+```
+
+```
+## PROJCS["Belge 1972 / Belgian Lambert 72",
+##     GEOGCS["Belge 1972",
+##         DATUM["Reseau_National_Belge_1972",
+##             SPHEROID["International 1924",6378388,297,
+##                 AUTHORITY["EPSG","7022"]],
+##             AUTHORITY["EPSG","6313"]],
+##         PRIMEM["Greenwich",0,
+##             AUTHORITY["EPSG","8901"]],
+##         UNIT["degree",0.0174532925199433,
+##             AUTHORITY["EPSG","9122"]],
+##         AUTHORITY["EPSG","4313"]],
+##     PROJECTION["Lambert_Conformal_Conic_2SP"],
+##     PARAMETER["latitude_of_origin",90],
+##     PARAMETER["central_meridian",4.36748666666667],
+##     PARAMETER["standard_parallel_1",51.1666672333333],
+##     PARAMETER["standard_parallel_2",49.8333339],
+##     PARAMETER["false_easting",150000.013],
+##     PARAMETER["false_northing",5400088.438],
+##     UNIT["metre",1,
+##         AUTHORITY["EPSG","9001"]],
+##     AXIS["Easting",EAST],
+##     AXIS["Northing",NORTH],
+##     AUTHORITY["EPSG","31370"]]
+```
+
+---
+
+[`rgrass7`](https://rsbivand.github.io/rgrass7/) checks the required command syntax, within R, based on the `--interface-description` XML output of each command
+
+--
+
+- `execshell()`: advantage of accepting entire GRASS script; supports maximum number of commands
+- `rgrass7::execGRASS()`: advantage that the GRASS command parameters can be more easily programmed in R
+- `rgrass7::stringexecGRASS()`: advantage of using original GRASS syntax (e.g. copied from GRASS session), while following `rgrass7` philosophy of handling user input in R
+
+--
+
+Of course all three can be mixed in the same script.
+      
+
+---
+
+Advantages of working with GRASS from R:
+
+- combines forces of GRASS _and_ R
+
+--
+
+- R adds the facilities to create an overall reproducible workflow (e.g. literate programming with R markdown)
+
+--
+
+- interact with spatial R objects using [`rgrass7`](https://rsbivand.github.io/rgrass7/) functions:
+
+    - `readVECT()`
+    - `writeVECT()`
+    - `readRAST()`
+    - `writeRAST()`
+--
+    - supports `sp`, `sf` and `stars` objects (and others if you convert in R)
+--
+    - set to using either `sp` or `sf`+`stars` with `use_sp()` or `use_sf()`
+--
+    - advice: if GRASS must work on already existing data (cloud / disk), let GRASS read it directly (`writeXXX()` will cause an extra write + read step by using an intermediate file)
+    
+---
+layout: false
+
+# Complete workflow as Rmd
+
+See &lt;https://florisvdh.github.io/demos/20210617_grass/&gt;.
+
+---
+
+# Some other bridges to open GIS software
+
+- QGIS from R: &lt;https://paleolimbot.github.io/qgisprocess/&gt;
+
+--
+
+- SAGA-GIS from R: &lt;https://stevenpawley.github.io/Rsagacmd/&gt;
+
+--
+
+See https://geocompr.robinlovelace.net/gis.html.
+
+    
+---
+class: inverse, center, middle
+
+# Questions?
+
+
+
+
+
+
+
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
