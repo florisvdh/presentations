@@ -586,6 +586,7 @@ See <https://florisvdh.github.io/demos/20210617_grass/>.
 --
 
 - PostGIS from R: <https://rpostgres.r-dbi.org/>
+  - demo: <https://rtask.thinkr.fr/interact-with-postgis-from-r-with-dbi-and-sf/>
 
 --
 
