@@ -589,7 +589,7 @@ See <https://florisvdh.github.io/demos/20210617_grass/>.
 
 --
 
-See https://geocompr.robinlovelace.net/gis.html.
+See <https://geocompr.robinlovelace.net/gis.html>.
 
     
 ---
